@@ -40,8 +40,6 @@ static int g_backlight = 255;
 char const*const AMBER_LED_FILE = "/sys/class/leds/amber/brightness";
 char const*const GREEN_LED_FILE = "/sys/class/leds/green/brightness";
 
-char const*const BUTTON_FILE = "/sys/class/leds/button-backlight/brightness";
-char const*const BUTTON_CURRENTS_FILE = "/sys/class/leds/button-backlight/currents";
 
 char const*const AMBER_BLINK_FILE = "/sys/class/leds/amber/blink";
 char const*const GREEN_BLINK_FILE = "/sys/class/leds/green/blink";
@@ -218,7 +216,7 @@ static int rgb_to_brightness(struct light_state_t const* state)
           (29 * (color & 0x00ff))) >> 8;
 }
 
-static int set_light_buttons(struct light_device_t* dev,
+/*static int set_light_buttons(struct light_device_t* dev,
                              struct light_state_t const* state) {
   int err = 0;
   int brightness = rgb_to_brightness(state);
@@ -229,7 +227,7 @@ static int set_light_buttons(struct light_device_t* dev,
 
   return 0;
 }
-
+*/
 static int set_light_backlight(struct light_device_t* dev,
                                struct light_state_t const* state) {
   int err = 0;
