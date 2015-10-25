@@ -34,7 +34,8 @@ LOCAL_SRC_FILES :=                  \
                    sensors.cpp      \
                    SensorBase.cpp   \
                    CwMcuSensor.cpp  \
-                   InputEventReader.cpp
+                   InputEventReader.cpp \
+                   ProximitySensor.cpp
 
 LOCAL_SHARED_LIBRARIES := liblog libcutils libdl
 
