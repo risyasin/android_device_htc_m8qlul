@@ -327,10 +327,11 @@ PRODUCT_COPY_FILES += \
 
 
 # Sensors
-#PRODUCT_PACKAGES += \
-#    sensors.msm8916
+PRODUCT_PACKAGES += \
+    sensors.msm8916
 
 PRODUCT_PACKAGES += \
+    sensors.msm8939 \
     sensorservice
 
 # Thermal

@@ -269,6 +269,10 @@ BOARD_SEPOLICY_UNION += \
     wcnss_service.te
 # }}}
 
+# Sensors   {{{
+BOARD_VENDOR_USE_SENSOR_HAL := sensor_hub
+# }}}
+
 # Video    {{{
 TARGET_HAVE_SIGNED_VENUS_FW := true
 # }}}
