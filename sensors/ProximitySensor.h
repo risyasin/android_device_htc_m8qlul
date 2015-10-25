@@ -14,48 +14,41 @@
  * limitations under the License.
  */
 
-#ifndef ANDROID_PROXIMITY_SENSOR_H
-#define ANDROID_PROXIMITY_SENSOR_H
+#ifndef ANDROID_LIGHT_SENSOR_H
+#define ANDROID_LIGHT_SENSOR_H
 
 #include <stdint.h>
 #include <errno.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
 
+#include "sensors.h"
 #include "SensorBase.h"
 #include "InputEventReader.h"
-#include "NativeSensorManager.h"
-
-#define ALSPROX_IOCTL_MAGIC          (0xCF)
-#define ALSPROX_IOCTL_PROX_ON        _IOW(ALSPROX_IOCTL_MAGIC, 3, unsigned long)
-#define ALSPROX_IOCTL_PROX_OFF       _IOW(ALSPROX_IOCTL_MAGIC, 4, unsigned long)
-#define ALSPROX_IOCTL_PROX_OFFSET    _IOW(ALSPROX_IOCTL_MAGIC, 5, unsigned long)
-#define ALSPROX_IOCTL_PROX_CALIBRATE _IOW(ALSPROX_IOCTL_MAGIC, 6, unsigned long)
-#define ALSPROX_IOCTL_PHONE_STATE    _IOW(ALSPROX_IOCTL_MAGIC, 7, unsigned long)
 
 /*****************************************************************************/
 
 struct input_event;
 
-class ProximitySensor : public SensorBase {
+class LightSensor : public SensorBase {
+    int mEnabled;
     InputEventCircularReader mInputReader;
     sensors_event_t mPendingEvent;
     bool mHasPendingEvent;
-    int sensor_index;
+    char input_sysfs_path[PATH_MAX];
+    int input_sysfs_path_len;
 
     int setInitialState();
-    float indexToValue(size_t index) const;
 
 public:
-	ProximitySensor();
-	ProximitySensor(char *name);
-	ProximitySensor(struct SensorContext *context);
-    virtual ~ProximitySensor();
+            LightSensor();
+    virtual ~LightSensor();
     virtual int readEvents(sensors_event_t* data, int count);
     virtual bool hasPendingEvents() const;
+    virtual int setDelay(int32_t handle, int64_t ns);
     virtual int enable(int32_t handle, int enabled);
 };
 
 /*****************************************************************************/
 
-#endif  // ANDROID_PROXIMITY_SENSOR_H
+#endif  // ANDROID_LIGHT_SENSOR_H

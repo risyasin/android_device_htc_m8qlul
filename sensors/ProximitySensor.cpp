@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
- * Not a Contribution.
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,46 +25,26 @@
 #include <cutils/log.h>
 
 #include "ProximitySensor.h"
-#include "sensors.h"
-
-#define PROXIMITY_SYS_PATH      "/sys/devices/soc.0/78b6000.i2c/i2c-0/0-001e/"
-#define PROXIMITY_SEN_NAME      "PA12200001_proximity"
-#define PROXIMITY_ENABLE        "enable_ps_sensor"
-#define ALSPROX_DEV_NAME     "/dev/yl_alsprox_sensor"
-#define EVENT_TYPE_PROXIMITY    EV_MSC
 
 /*****************************************************************************/
+
 ProximitySensor::ProximitySensor()
-    : SensorBase(NULL, PROXIMITY_SEN_NAME),
+    : SensorBase(NULL, "proximity"),
+      mEnabled(0),
       mInputReader(4),
-      mHasPendingEvent(false),
-      sensor_index(0)
+      mHasPendingEvent(false)
 {
-	int i;
+    mPendingEvent.version = sizeof(sensors_event_t);
+    mPendingEvent.sensor = SENSORS_PROXIMITY_HANDLE;
+    mPendingEvent.type = SENSOR_TYPE_PROXIMITY;
+    memset(mPendingEvent.data, 0, sizeof(mPendingEvent.data));
 
-	mPendingEvent.version = sizeof(sensors_event_t);
-	mPendingEvent.sensor = SENSORS_PROXIMITY_HANDLE;
-	mPendingEvent.type = SENSOR_TYPE_PROXIMITY;
-	memset(mPendingEvent.data, 0, sizeof(mPendingEvent.data));
-
-	if (data_fd) {
-		enable(0, 1);
-	}
-}
-
-ProximitySensor::ProximitySensor(struct SensorContext *context)
-	: SensorBase(NULL, PROXIMITY_SEN_NAME, context),
-	  mInputReader(4),
-	  mHasPendingEvent(false),
-	  sensor_index(0)
-{
-	mPendingEvent.version = sizeof(sensors_event_t);
-	mPendingEvent.sensor = context->sensor->handle;
-	mPendingEvent.type = SENSOR_TYPE_PROXIMITY;
-	memset(mPendingEvent.data, 0, sizeof(mPendingEvent.data));
-
-    if (data_fd > 0) {
-        context->data_fd = data_fd;
+    if (data_fd) {
+        strcpy(input_sysfs_path, "/sys/class/input/");
+        strcat(input_sysfs_path, input_name);
+        strcat(input_sysfs_path, "/device/");
+        input_sysfs_path_len = strlen(input_sysfs_path);
+        enable(0, 1);
     }
 }
 
@@ -76,37 +54,43 @@ ProximitySensor::~ProximitySensor() {
     }
 }
 
+int ProximitySensor::setInitialState() {
+    struct input_absinfo absinfo;
+    if (!ioctl(data_fd, EVIOCGABS(EVENT_TYPE_PROXIMITY), &absinfo)) {
+        // make sure to report an event immediately
+        mHasPendingEvent = true;
+        mPendingEvent.distance = indexToValue(absinfo.value);
+    }
+    return 0;
+}
+
 int ProximitySensor::enable(int32_t, int en) {
     int flags = en ? 1 : 0;
     if (flags != mEnabled) {
         int fd;
-        if (sensor_index < 0) {
-            ALOGE("invalid sensor index:%d\n", sensor_index);
-            return -1;
-        }
-
-        fd = open(ALSPROX_DEV_NAME, O_RDWR);
+        strcpy(&input_sysfs_path[input_sysfs_path_len], "enable");
+        fd = open(input_sysfs_path, O_RDWR);
         if (fd >= 0) {
+            char buf[2];
+            buf[1] = 0;
             if (flags) {
-                ioctl(fd, ALSPROX_IOCTL_PROX_ON, NULL);
+                buf[0] = '1';
             } else {
-                ioctl(fd, ALSPROX_IOCTL_PROX_OFF, NULL);
+                buf[0] = '0';
             }
+            write(fd, buf, sizeof(buf));
             close(fd);
             mEnabled = flags;
+            setInitialState();
             return 0;
-        } else {
-            ALOGE("open %s failed.(%s)\n", input_sysfs_path, strerror(errno));
-            return -1;
         }
-	} else if (flags) {
-		mHasPendingEvent = true;
-	}
+        return -1;
+    }
     return 0;
 }
 
 bool ProximitySensor::hasPendingEvents() const {
-    return mHasPendingEvent || mHasPendingMetadata;
+    return mHasPendingEvent;
 }
 
 int ProximitySensor::readEvents(sensors_event_t* data, int count)
@@ -121,13 +105,6 @@ int ProximitySensor::readEvents(sensors_event_t* data, int count)
         return mEnabled ? 1 : 0;
     }
 
-	if (mHasPendingMetadata) {
-		mHasPendingMetadata--;
-		meta_data.timestamp = getTimestamp();
-		*data = meta_data;
-		return mEnabled ? 1 : 0;
-	}
-
     ssize_t n = mInputReader.fill(data_fd);
     if (n < 0)
         return n;
@@ -137,41 +114,31 @@ int ProximitySensor::readEvents(sensors_event_t* data, int count)
 
     while (count && mInputReader.readEvent(&event)) {
         int type = event->type;
-        if (type == EVENT_TYPE_PROXIMITY) {
-            if (event->code == MSC_SCAN) {
-                if (event->value >= 5)
-                    mPendingEvent.distance = 5;
-                else
-                    mPendingEvent.distance = 0;
+        if (type == EV_ABS) {
+            if (event->code == EVENT_TYPE_PROXIMITY) {
+                if (event->value != -1) {
+                    // FIXME: not sure why we're getting -1 sometimes
+                    mPendingEvent.distance = indexToValue(event->value);
+                }
             }
         } else if (type == EV_SYN) {
-                switch ( event->code ) {
-                        case SYN_TIME_SEC:
-                                mUseAbsTimeStamp = true;
-                                report_time = event->value * 1000000000LL;
-                                break;
-                        case SYN_TIME_NSEC:
-                                mUseAbsTimeStamp = true;
-                                mPendingEvent.timestamp = report_time + event->value;
-                                break;
-                        case SYN_REPORT:
-                                if(mUseAbsTimeStamp != true) {
-                                        mPendingEvent.timestamp = timevalToNano(event->time);
-                                }
-                                if (mEnabled) {
-                                        *data++ = mPendingEvent;
-                                        count--;
-                                        numEventReceived++;
-                                }
-                                break;
-                }
-
+            mPendingEvent.timestamp = timevalToNano(event->time);
+            if (mEnabled) {
+                *data++ = mPendingEvent;
+                count--;
+                numEventReceived++;
+            }
         } else {
-            ALOGE("ProximitySensor: unknown event (type=%d, code=%d)",
+            LOGE("ProximitySensor: unknown event (type=%d, code=%d)",
                     type, event->code);
         }
         mInputReader.next();
     }
 
     return numEventReceived;
+}
+
+float ProximitySensor::indexToValue(size_t index) const
+{
+    return index * PROXIMITY_THRESHOLD_GP2A;
 }
