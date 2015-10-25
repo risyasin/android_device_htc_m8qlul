@@ -453,15 +453,15 @@ int NativeSensorManager::getDataInfo() {
 				list->driver = new AccelSensor(list);
 				sensor_acc = *(list->sensor);
 				break;
-			case SENSOR_TYPE_PROXIMITY:
+		/*	case SENSOR_TYPE_PROXIMITY:
 				has_proximity = 1;
 #if defined(SENSORS_DEVICE_API_VERSION_1_3)
 				/* reporting mode fix up */
-				list->sensor->flags |= SENSOR_FLAG_ON_CHANGE_MODE;
+		/*		list->sensor->flags |= SENSOR_FLAG_ON_CHANGE_MODE;
 #endif
 				list->driver = new ProximitySensor(list);
 				sensor_proximity = *(list->sensor);
-				break;
+				break; */
 			case SENSOR_TYPE_LIGHT:
 				has_light = 1;
 #if defined(SENSORS_DEVICE_API_VERSION_1_3)
