@@ -30,7 +30,7 @@
 __BEGIN_DECLS
 
 /*****************************************************************************/
-
+#define PROXIMITY_THRESHOLD_GP2A  5.0f
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 #define ID_A                                        0//CW_ACCELERATION
@@ -42,6 +42,7 @@ __BEGIN_DECLS
 #define ID_RV                                       6//CW_ROTATIONVECTOR
 #define ID_LA                                       7//CW_LINEARACCELERATION
 #define ID_G                                        8//CW_GRAVITY
+#define ID_P					    9//Proximity
 
 #define ID_CW_MAGNETIC_UNCALIBRATED                 9//CW_MAGNETIC_UNCALIBRATED
 #define ID_CW_GYROSCOPE_UNCALIBRATED               10//CW_GYROSCOPE_UNCALIBRATED
