@@ -31,6 +31,8 @@ __BEGIN_DECLS
 
 /*****************************************************************************/
 #define PROXIMITY_THRESHOLD_GP2A  5.0f
+#define EVENT_TYPE_PROXIMITY      ABS_DISTANCE
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 #define SENSORS_ACCELERATION_HANDLE		0
